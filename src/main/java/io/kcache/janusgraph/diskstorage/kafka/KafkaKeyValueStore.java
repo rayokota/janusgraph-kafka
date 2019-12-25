@@ -168,8 +168,8 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
             while (iter.hasNext()) {
                 KeyValue<byte[], byte[]> keyValue = iter.next();
                 StaticBuffer key = fromBytes(keyValue.key);
-                StaticBuffer value = fromBytes(keyValue.value);
                 if (selector.include(key)) {
+                    StaticBuffer value = fromBytes(keyValue.value);
                     result.add(new KeyValueEntry(key, value));
                 }
                 if (selector.reachedLimit()) {
