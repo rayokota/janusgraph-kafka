@@ -18,10 +18,10 @@ import io.kcache.Cache;
 import io.kcache.KafkaCache;
 import io.kcache.KafkaCacheConfig;
 import io.kcache.KeyValue;
-import io.kcache.janusgraph.diskstorage.kafka.serialization.StaticBufferSerde;
 import io.kcache.utils.Caches;
 import io.kcache.utils.InMemoryCache;
 import io.kcache.utils.rocksdb.RocksDBCache;
+import org.apache.kafka.common.serialization.Serdes;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.PermanentBackendException;
 import org.janusgraph.diskstorage.StaticBuffer;
@@ -32,6 +32,7 @@ import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
 import org.janusgraph.diskstorage.util.RecordIterator;
+import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,14 +50,12 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaKeyValueStore.class);
 
-    private static final StaticBufferSerde SERDE = new StaticBufferSerde();
-
     public static final String KCACHE_PROPS_DEFAULT = "./conf/kcache.properties";
 
     private final String name;
     private final KafkaStoreManager manager;
     private boolean isOpen;
-    private final Cache<StaticBuffer, StaticBuffer> cache;
+    private final Cache<byte[], byte[]> cache;
 
     public KafkaKeyValueStore(String name, KafkaStoreManager manager) {
         this.name = name;
@@ -68,16 +67,12 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
         Configuration config = manager.getStorageConfig();
         boolean enableRocksDb = config.get(KafkaConfigOptions.ROCKSDB_ENABLE);
         String rootDir = config.get(KafkaConfigOptions.ROCKSDB_ROOT_DIR);
-        Comparator<StaticBuffer> cmp = (k1, k2) -> {
-            byte[] b1 = SERDE.serializer().serialize(null, k1);
-            byte[] b2 = SERDE.serializer().serialize(null, k2);
-            return UnsignedBytes.lexicographicalComparator().compare(b1, b2);
-        };
-        Cache<StaticBuffer, StaticBuffer> cache = enableRocksDb
-                ? new RocksDBCache<>(topic, "rocksdb", rootDir, SERDE, SERDE, cmp)
+        Comparator<byte[]> cmp = UnsignedBytes.lexicographicalComparator();
+        Cache<byte[], byte[]> cache = enableRocksDb
+                ? new RocksDBCache<>(topic, "rocksdb", rootDir, Serdes.ByteArray(), Serdes.ByteArray(), cmp)
                 : new InMemoryCache<>(new ConcurrentSkipListMap<>(cmp));
-        Cache<StaticBuffer, StaticBuffer> rows = new KafkaCache<>(
-                new KafkaCacheConfig(configs), SERDE, SERDE, null, cache);
+        Cache<byte[], byte[]> rows = new KafkaCache<>(
+                new KafkaCacheConfig(configs), Serdes.ByteArray(), Serdes.ByteArray(), null, cache);
         this.cache = Caches.concurrentCache(rows);
         this.cache.init();
         log.debug("Initializing Kafka store {}, size={}", getName(), size());
@@ -128,7 +123,7 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
     }
 
     public void clear() {
-        Iterator<KeyValue<StaticBuffer, StaticBuffer>> iter = cache.all();
+        Iterator<KeyValue<byte[], byte[]>> iter = cache.all();
         while (iter.hasNext()) {
             cache.remove(iter.next().key);
         }
@@ -149,12 +144,12 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
 
     @Override
     public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws BackendException {
-        return cache.get(key);
+        return fromBytes(cache.get(toBytes(key)));
     }
 
     @Override
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws BackendException {
-        return cache.containsKey(key);
+        return cache.containsKey(toBytes(key));
     }
 
     @Override
@@ -169,11 +164,13 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
         final KeySelector selector = query.getKeySelector();
         int cmp = keyStart.compareTo(keyEnd);
         if (cmp < 0) {
-            final Iterator<KeyValue<StaticBuffer, StaticBuffer>> iter = cache.range(keyStart, true, keyEnd, false);
+            final Iterator<KeyValue<byte[], byte[]>> iter = cache.range(toBytes(keyStart), true, toBytes(keyEnd), false);
             while (iter.hasNext()) {
-                KeyValue<StaticBuffer, StaticBuffer> keyValue = iter.next();
-                if (selector.include(keyValue.key)) {
-                    result.add(new KeyValueEntry(keyValue.key, keyValue.value));
+                KeyValue<byte[], byte[]> keyValue = iter.next();
+                StaticBuffer key = fromBytes(keyValue.key);
+                StaticBuffer value = fromBytes(keyValue.value);
+                if (selector.include(key)) {
+                    result.add(new KeyValueEntry(key, value));
                 }
                 if (selector.reachedLimit()) {
                     break;
@@ -217,13 +214,27 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
 
     @Override
     public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException {
-        cache.put(key, value);
+        cache.put(toBytes(key), toBytes(value));
         cache.flush();
     }
 
     @Override
     public void delete(StaticBuffer key, StoreTransaction txh) throws BackendException {
-        cache.remove(key);
+        cache.remove(toBytes(key));
         cache.flush();
+    }
+
+    private static byte[] toBytes(StaticBuffer buffer) {
+        if (buffer == null) {
+            return null;
+        }
+        return buffer.as(StaticBuffer.ARRAY_FACTORY);
+    }
+
+    private static StaticBuffer fromBytes(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        return new StaticArrayBuffer(bytes);
     }
 }
