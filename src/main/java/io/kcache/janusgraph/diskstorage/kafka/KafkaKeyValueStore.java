@@ -95,9 +95,6 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
         setConfig(configs, KafkaCacheConfig.KAFKACACHE_TOPIC_CONFIG, topic);
         setConfig(configs, KafkaCacheConfig.KAFKACACHE_GROUP_ID_CONFIG, groupId);
         setConfig(configs, KafkaCacheConfig.KAFKACACHE_CLIENT_ID_CONFIG, clientId);
-        if (config.get(KafkaConfigOptions.ROCKSDB_ENABLE)) {
-            setConfig(configs, KafkaCacheConfig.KAFKACACHE_ENABLE_OFFSET_COMMIT_CONFIG, "true");
-        }
         return configs;
     }
 
