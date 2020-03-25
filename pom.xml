@@ -13,7 +13,7 @@
     <properties>
         <maven.compiler.plugin.version>3.6.2</maven.compiler.plugin.version>
         <jdk.version>1.8</jdk.version>
-        <janusgraph.version>0.4.0</janusgraph.version>
+        <janusgraph.version>0.4.1</janusgraph.version>
         <dependency.plugin.version>2.10</dependency.plugin.version>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS,CELL_TTL_TESTS</test.excluded.groups>
         <test.skip.default>false</test.skip.default>
