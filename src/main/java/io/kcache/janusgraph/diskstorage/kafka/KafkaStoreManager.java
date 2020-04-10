@@ -26,11 +26,9 @@ import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
-import org.janusgraph.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -131,11 +129,6 @@ public class KafkaStoreManager extends AbstractStoreManager implements OrderedKe
     public void clearStorage() throws BackendException {
         for (KafkaKeyValueStore store : stores.values()) {
             store.clear();
-        }
-        boolean enableRocksDb = getStorageConfig().get(KafkaConfigOptions.ROCKSDB_ENABLE);
-        String rootDir = getStorageConfig().get(KafkaConfigOptions.ROCKSDB_ROOT_DIR);
-        if (enableRocksDb) {
-            IOUtils.deleteFromDirectory(new File(rootDir, "rocksdb"));
         }
     }
 
