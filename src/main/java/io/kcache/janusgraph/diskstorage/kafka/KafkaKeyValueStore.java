@@ -210,7 +210,7 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
     }
 
     @Override
-    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException {
+    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh, final Integer ttl) throws BackendException {
         cache.put(toBytes(key), toBytes(value));
         cache.flush();
     }
