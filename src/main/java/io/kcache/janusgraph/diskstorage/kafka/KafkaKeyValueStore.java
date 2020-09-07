@@ -18,6 +18,7 @@ import io.kcache.Cache;
 import io.kcache.KafkaCache;
 import io.kcache.KafkaCacheConfig;
 import io.kcache.KeyValue;
+import io.kcache.KeyValueIterator;
 import io.kcache.utils.Caches;
 import io.kcache.utils.InMemoryCache;
 import io.kcache.utils.rocksdb.RocksDBCache;
@@ -120,11 +121,12 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
     }
 
     public void clear() {
-        Iterator<KeyValue<byte[], byte[]>> iter = cache.all();
-        while (iter.hasNext()) {
-            cache.remove(iter.next().key);
+        try (KeyValueIterator<byte[], byte[]> iter = cache.all()) {
+            while (iter.hasNext()) {
+                cache.remove(iter.next().key);
+            }
+            cache.flush();
         }
-        cache.flush();
     }
 
     public synchronized void shutDown() throws BackendException {
@@ -161,16 +163,17 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
         final KeySelector selector = query.getKeySelector();
         int cmp = keyStart.compareTo(keyEnd);
         if (cmp < 0) {
-            final Iterator<KeyValue<byte[], byte[]>> iter = cache.range(toBytes(keyStart), true, toBytes(keyEnd), false);
-            while (iter.hasNext()) {
-                KeyValue<byte[], byte[]> keyValue = iter.next();
-                StaticBuffer key = fromBytes(keyValue.key);
-                if (selector.include(key)) {
-                    StaticBuffer value = fromBytes(keyValue.value);
-                    result.add(new KeyValueEntry(key, value));
-                }
-                if (selector.reachedLimit()) {
-                    break;
+            try (KeyValueIterator<byte[], byte[]> iter = cache.range(toBytes(keyStart), true, toBytes(keyEnd), false)) {
+                while (iter.hasNext()) {
+                    KeyValue<byte[], byte[]> keyValue = iter.next();
+                    StaticBuffer key = fromBytes(keyValue.key);
+                    if (selector.include(key)) {
+                        StaticBuffer value = fromBytes(keyValue.value);
+                        result.add(new KeyValueEntry(key, value));
+                    }
+                    if (selector.reachedLimit()) {
+                        break;
+                    }
                 }
             }
         }
