@@ -15,7 +15,7 @@
         <jdk.version>1.8</jdk.version>
         <jackson.version>2.11.1</jackson.version>
         <janusgraph.version>0.5.2</janusgraph.version>
-        <kcache.version>3.2.1</kcache.version>
+        <kcache.version>3.3.1</kcache.version>
         <slf4j.version>1.7.30</slf4j.version>
         <dependency.plugin.version>2.10</dependency.plugin.version>
         <test.excluded.groups>MEMORY_TESTS,PERFORMANCE_TESTS,BRITTLE_TESTS,CELL_TTL_TESTS</test.excluded.groups>
@@ -45,6 +45,26 @@
         <dependency>
             <groupId>io.kcache</groupId>
             <artifactId>kcache</artifactId>
+            <version>${kcache.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.kcache</groupId>
+            <artifactId>kcache-bdbje</artifactId>
+            <version>${kcache.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.kcache</groupId>
+            <artifactId>kcache-lmdb</artifactId>
+            <version>${kcache.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.kcache</groupId>
+            <artifactId>kcache-mapdb</artifactId>
+            <version>${kcache.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.kcache</groupId>
+            <artifactId>kcache-rocksdb</artifactId>
             <version>${kcache.version}</version>
         </dependency>
         <dependency>

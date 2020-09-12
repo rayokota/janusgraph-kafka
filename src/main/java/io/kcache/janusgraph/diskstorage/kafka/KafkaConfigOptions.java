@@ -39,18 +39,4 @@ public interface KafkaConfigOptions {
         "The prefix to be used for topic names.  Defaults to the graph name.",
         ConfigOption.Type.LOCAL,
         String.class);
-
-    ConfigOption<Boolean> ROCKSDB_ENABLE = new ConfigOption<>(
-        KAFKA_NS,
-        "rocksdb-enable",
-        "Whether to enable RocksDB within KCache.",
-        ConfigOption.Type.LOCAL,
-        true);
-
-    ConfigOption<String> ROCKSDB_ROOT_DIR = new ConfigOption<>(
-        KAFKA_NS,
-        "rocksdb-rootdir",
-        "Root directory for RocksDB storage.",
-        ConfigOption.Type.LOCAL,
-        "/tmp");
 }

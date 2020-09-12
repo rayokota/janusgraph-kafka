@@ -20,8 +20,6 @@ import io.kcache.KafkaCacheConfig;
 import io.kcache.KeyValue;
 import io.kcache.KeyValueIterator;
 import io.kcache.utils.Caches;
-import io.kcache.utils.InMemoryCache;
-import io.kcache.utils.rocksdb.RocksDBCache;
 import org.apache.kafka.common.serialization.Serdes;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.PermanentBackendException;
@@ -45,7 +43,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 public class KafkaKeyValueStore implements OrderedKeyValueStore {
 
@@ -65,15 +62,9 @@ public class KafkaKeyValueStore implements OrderedKeyValueStore {
         String topicPrefix = manager.getTopicPrefix();
         String topic = topicPrefix + "_" + this.name;
         Map<?, ?> configs = getConfigs(topic);
-        Configuration config = manager.getStorageConfig();
-        boolean enableRocksDb = config.get(KafkaConfigOptions.ROCKSDB_ENABLE);
-        String rootDir = config.get(KafkaConfigOptions.ROCKSDB_ROOT_DIR);
         Comparator<byte[]> cmp = UnsignedBytes.lexicographicalComparator();
-        Cache<byte[], byte[]> cache = enableRocksDb
-                ? new RocksDBCache<>(topic, "rocksdb", rootDir, Serdes.ByteArray(), Serdes.ByteArray(), cmp)
-                : new InMemoryCache<>(new ConcurrentSkipListMap<>(cmp));
         Cache<byte[], byte[]> rows = new KafkaCache<>(
-                new KafkaCacheConfig(configs), Serdes.ByteArray(), Serdes.ByteArray(), null, cache);
+                new KafkaCacheConfig(configs), Serdes.ByteArray(), Serdes.ByteArray(), null, topic, cmp);
         this.cache = Caches.concurrentCache(rows);
         this.cache.init();
         log.debug("Initializing Kafka store {}, size={}", getName(), size());

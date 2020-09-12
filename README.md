@@ -33,5 +33,5 @@ Follow these steps if you'd like to use the latest version built from source.
 |`storage.conf-file`|Path to the configuration file for KCache.||
 |`storage.kafka.bootstrap-servers`|List of Kafka brokers to connect to.  Overrides the value in the KCache configuration file.||
 |`storage.kafka.topic-prefix`|The prefix to be used for topic names.  Defaults to the graph name.||
-|`storage.kafka.rocksdb-enable`|Whether to enable RocksDB within KCache.|true|
-|`storage.kafka.rocksdb-rootdir`|Root directory for RocksDB storage.|/tmp|
+|`storage.kafka.kafkacache.backing.cache`|The backing cache for KCache, one of `memory`, `bdbje`, `lmdb`, or `rocksdb`.|memory|
+|`storage.kafka.kafkacache.data.dir`|Root directory for backing cache storage.|/tmp|

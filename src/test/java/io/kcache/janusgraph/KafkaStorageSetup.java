@@ -32,7 +32,6 @@ public class KafkaStorageSetup extends StorageSetup {
                 .set(STORAGE_BACKEND,"io.kcache.janusgraph.diskstorage.kafka.KafkaStoreManager")
                 .set(KafkaConfigOptions.BOOTSTRAP_SERVERS, "localhost:9092")
                 .set(KafkaConfigOptions.TOPIC_PREFIX, graphName)
-                .set(KafkaConfigOptions.ROCKSDB_ENABLE, false)
                 .set(DROP_ON_CLEAR, false);
     }
 
